@@ -23,7 +23,7 @@ import {
 import { cn } from "@/lib/cn";
 import { getColumnIcon } from "@/lib/column";
 import { getInitials } from "@/lib/get-initials";
-import { getPriorityLabel } from "@/lib/i18n/domain";
+import { getPriorityLabel, getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { resolveLabelColor } from "@/lib/label-color";
 import { getPriorityIcon } from "@/lib/priority";
 import type { SortConfig } from "@/lib/sort-tasks";
@@ -181,7 +181,7 @@ export default function BoardToolbar({
 
   const getStatusDisplayName = (statusId: string) => {
     const column = project?.columns?.find((col) => col.id === statusId);
-    return column?.name || statusId;
+    return getStatusDisplayLabel(statusId, column?.name);
   };
   const getStatusIcon = (statusId: string) => {
     const column = project?.columns?.find((col) => col.id === statusId);

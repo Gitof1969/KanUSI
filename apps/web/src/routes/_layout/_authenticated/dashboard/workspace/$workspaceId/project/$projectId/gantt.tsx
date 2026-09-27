@@ -1,6 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { addDays, format, isSameMonth, isToday, isWeekend } from "date-fns";
-import { Calendar, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -21,10 +28,11 @@ import PageTitle from "@/components/page-title";
 import TaskDetailsSheet from "@/components/task/task-details-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useResourceConflicts } from "@/hooks/queries/resource/use-resource-conflicts";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/cn";
-import { getStatusLabel } from "@/lib/i18n/domain";
+import { getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 
 type GanttSearchParams = {
@@ -45,7 +53,16 @@ function RouteComponent() {
   const { projectId, workspaceId } = Route.useParams();
   const { taskId } = Route.useSearch();
   const navigate = useNavigate();
-  const { data: project } = useGetTasks(projectId);
+  const {
+    data: project,
+    refetch: refetchTasks,
+    isFetching: tasksFetching,
+  } = useGetTasks(projectId);
+  const {
+    data: resourceConflicts = [],
+    refetch: refetchConflicts,
+    isFetching: conflictsFetching,
+  } = useResourceConflicts(workspaceId);
   const weekStartsOn = useUserPreferencesStore((state) => state.weekStartsOn);
   const [searchQuery, setSearchQuery] = useState("");
   const [windowStart, setWindowStart] = useState<{
@@ -141,6 +158,15 @@ function RouteComponent() {
       );
     });
   }, [parsedTasks, project?.slug, searchQuery]);
+
+  const conflictingTaskIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const conflict of resourceConflicts) {
+      ids.add(conflict.task.id);
+      if (conflict.conflictingTask) ids.add(conflict.conflictingTask.id);
+    }
+    return ids;
+  }, [resourceConflicts]);
 
   const timeline = useMemo(
     () =>
@@ -309,6 +335,24 @@ function RouteComponent() {
             <Button
               variant="outline"
               size="xs"
+              className="min-h-11 touch-manipulation sm:min-h-0"
+              disabled={tasksFetching || conflictsFetching}
+              onClick={() =>
+                void Promise.all([refetchTasks(), refetchConflicts()])
+              }
+            >
+              <RefreshCw
+                className={cn(
+                  "size-3.5",
+                  (tasksFetching || conflictsFetching) && "animate-spin",
+                )}
+              />
+              {t("tasks:gantt.refresh")}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="xs"
               className="min-h-11 touch-manipulation sm:hidden"
               onClick={() => setIsTaskRailOpen((current) => !current)}
             >
@@ -461,20 +505,35 @@ function RouteComponent() {
                             >
                               <div className="flex w-full items-center gap-1.5">
                                 <span className="max-w-[7rem] truncate rounded-full bg-secondary px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-secondary-foreground sm:max-w-none">
-                                  {getStatusLabel(task.status)}
+                                  {getStatusDisplayLabel(
+                                    task.status,
+                                    project?.columns.find(
+                                      (column) =>
+                                        column.slug === task.status ||
+                                        column.id === task.status,
+                                    )?.name,
+                                  )}
                                 </span>
                                 <span className="truncate text-[10px] text-muted-foreground">
                                   {project?.slug}-{task.number}
                                 </span>
                               </div>
                               <p className="w-full line-clamp-1 text-xs font-medium leading-tight text-foreground">
-                                {task.title}
+                                <span className="flex items-center gap-1">
+                                  {conflictingTaskIds.has(task.id) ? (
+                                    <AlertTriangle className="size-3 shrink-0 text-destructive" />
+                                  ) : null}
+                                  <span className="truncate">{task.title}</span>
+                                </span>
                               </p>
                               <p className="w-full truncate text-[11px] leading-tight text-muted-foreground">
                                 {format(task.scheduleStart, "MMM d, yyyy")} -{" "}
                                 {format(task.scheduleEnd, "MMM d, yyyy")}
                                 {task.assigneeName
                                   ? ` • ${task.assigneeName}`
+                                  : ""}
+                                {task.resources?.length
+                                  ? ` • ${task.resources.map((resource) => resource.name).join(", ")}`
                                   : ""}
                               </p>
                             </button>
@@ -501,6 +560,15 @@ function RouteComponent() {
                         >
                           <GanttTaskBar
                             task={task}
+                            hasConflict={conflictingTaskIds.has(task.id)}
+                            statusLabel={getStatusDisplayLabel(
+                              task.status,
+                              project?.columns.find(
+                                (column) =>
+                                  column.slug === task.status ||
+                                  column.id === task.status,
+                              )?.name,
+                            )}
                             timeline={timeline}
                             pixelsPerDay={pixelsPerDay}
                             isMobile={isMobile}

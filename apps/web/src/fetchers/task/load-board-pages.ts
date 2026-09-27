@@ -50,6 +50,7 @@ export async function loadBoardPages<T extends ProjectWithTasks>(
             existing.externalLinks,
             task.externalLinks,
           );
+          existing.resources = mergeById(existing.resources, task.resources);
         }
       }
     }

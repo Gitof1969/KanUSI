@@ -20,6 +20,13 @@ type TaskCustomFieldValue = {
   value: string | null;
 };
 
+type TaskResource = {
+  id: string;
+  name: string;
+  type: string;
+  status: "operational" | "maintenance" | "out_of_service";
+};
+
 type Task = {
   id: string;
   title: string;
@@ -42,6 +49,7 @@ type Task = {
   subtaskCounts?: { completed: number; total: number };
   labels?: TaskLabel[];
   externalLinks?: TaskExternalLink[];
+  resources?: TaskResource[];
   customFieldValues?: TaskCustomFieldValue[];
 };
 

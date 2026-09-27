@@ -3,6 +3,7 @@ import { produce } from "immer";
 import {
   CalendarIcon,
   Check,
+  Factory,
   FolderKanban,
   Plus,
   Search,
@@ -77,12 +78,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import useSetCustomFieldValue from "@/hooks/mutations/custom-field/use-set-custom-field-value";
 import useCreateLabel from "@/hooks/mutations/label/use-create-label";
+import { useSetTaskResources } from "@/hooks/mutations/resource/use-set-task-resources";
 import useCreateTask from "@/hooks/mutations/task/use-create-task";
 import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import useGetCustomFieldsByProject from "@/hooks/queries/custom-field/use-get-custom-fields-by-project";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
+import { useResources } from "@/hooks/queries/resource/use-resources";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
@@ -240,6 +243,8 @@ function CreateTaskModalContent({
   const { data: workspaceLabels = [] } = useGetLabelsByWorkspace(
     workspace?.id || "",
   );
+  const { data: workspaceResources = [] } = useResources(workspace?.id || "");
+  const setTaskResources = useSetTaskResources(workspace?.id || "");
   const { canCreateTasks, canCreateLabels } = useWorkspacePermission();
   const canCreateTaskCapability = canCreateTasks();
   const canCreateLabelCapability = canCreateLabels();
@@ -252,6 +257,7 @@ function CreateTaskModalContent({
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [createMore, setCreateMore] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
+  const [resourceIds, setResourceIds] = useState<string[]>([]);
   const [draftTask, setDraftTask] = useState<Task | null>(null);
   const [discardConfirmationOpen, setDiscardConfirmationOpen] = useState(false);
 
@@ -365,6 +371,7 @@ function CreateTaskModalContent({
       dueDate ||
       selectedProjectId ||
       labels.length > 0 ||
+      resourceIds.length > 0 ||
       draftTask ||
       hasCustomFieldChanges,
   );
@@ -600,6 +607,11 @@ function CreateTaskModalContent({
             }),
           );
 
+      await setTaskResources.mutateAsync({
+        taskId: savedTask.id,
+        resourceIds,
+      });
+
       for (const label of labels) {
         try {
           await createLabel({
@@ -643,6 +655,7 @@ function CreateTaskModalContent({
         setStartDate(undefined);
         setDueDate(undefined);
         setLabels([]);
+        setResourceIds([]);
         setLabelsStep("select");
         setSearchValue("");
         setSelectedColor("gray");
@@ -1272,6 +1285,71 @@ function CreateTaskModalContent({
                       </Button>
                     </div>
                   )}
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors border border-border hover:bg-accent/50",
+                      resourceIds.length > 0
+                        ? "bg-accent/30 text-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    <Factory className="w-3.5 h-3.5" />
+                    <span className="max-w-40 truncate">
+                      {resourceIds.length
+                        ? workspaceResources
+                            .filter((resource) =>
+                              resourceIds.includes(resource.id),
+                            )
+                            .map((resource) => resource.name)
+                            .join(", ")
+                        : t("tasks:properties.resources")}
+                    </span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-1" align="start">
+                  <div className="max-h-64 space-y-1 overflow-y-auto">
+                    {workspaceResources.length ? (
+                      workspaceResources.map((resource) => {
+                        const selected = resourceIds.includes(resource.id);
+                        return (
+                          <button
+                            key={resource.id}
+                            type="button"
+                            className="flex h-9 w-full items-center gap-2 px-2 text-left text-sm hover:bg-accent/50"
+                            onClick={() =>
+                              setResourceIds((current) =>
+                                selected
+                                  ? current.filter((id) => id !== resource.id)
+                                  : [...current, resource.id],
+                              )
+                            }
+                          >
+                            <div className="w-4">
+                              {selected ? <Check className="h-4 w-4" /> : null}
+                            </div>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate">
+                                {resource.name}
+                              </span>
+                              <span className="block truncate text-[10px] text-muted-foreground">
+                                {resource.type} · {t(`workspace:resources.statuses.${resource.status}`)}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <p className="p-2 text-xs text-muted-foreground">
+                        {t("workspace:resources.emptyDescription")}
+                      </p>
+                    )}
+                  </div>
                 </PopoverContent>
               </Popover>
 

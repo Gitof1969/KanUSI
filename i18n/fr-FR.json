@@ -1758,6 +1758,7 @@
 		"sidebar": {
 			"overview": "Vue d'ensemble",
 			"projects": "Projets",
+			"resources": "Gestion des ressources",
 			"members": "Membres",
 			"invitations": "Invitations",
 			"more": "Plus",
@@ -2025,6 +2026,7 @@
 	},
 	"tasks": {
 		"title": "Tâches",
+		"conflict": "Conflit",
 		"status": {
 			"label": "Statut",
 			"to-do": "À faire",
@@ -2212,7 +2214,12 @@
 			"copyTaskBranch": "Copier la branche de la tâche",
 			"start": "Début",
 			"startDate": "Date de début",
-			"noDate": "Pas de date"
+			"noDate": "Pas de date",
+			"resources": "Machines",
+			"noResources": "Aucune machine",
+			"resourcesDescription": "Choisissez les machines nécessaires à cette tâche. Les réservations concurrentes et les maintenances seront signalées.",
+			"resourcesUpdated": "Machines de la tâche mises à jour",
+			"resourcesUpdateError": "Impossible de mettre à jour les machines de la tâche"
 		},
 		"move": {
 			"title": "Déplacer la tâche",
@@ -2349,11 +2356,12 @@
 			"resizeStart": "Redimensionner la date de début",
 			"resizeDue": "Redimensionner la date d'échéance",
 			"taskAriaLabel": "{{title}} : ouvrir ou déplacer",
-			"jumpToToday": "Jump to today",
-			"previousPeriod": "Previous period",
-			"nextPeriod": "Next period",
-			"periodStart": "Timeline start date",
-			"showTaskDates": "Show task dates"
+			"jumpToToday": "Aujourd'hui",
+			"refresh": "Actualiser",
+			"previousPeriod": "Période précédente",
+			"nextPeriod": "Période suivante",
+			"periodStart": "Début de la chronologie",
+			"showTaskDates": "Afficher les dates de la tâche"
 		},
 		"delete": {
 			"title": "Supprimer la tâche ?",
@@ -2534,6 +2542,48 @@
 			"reorderHandle": "Réorganiser le projet",
 			"reorderError": "Échec de la réorganisation des projets"
 		},
+		"resources": {
+			"pageTitle": "Gestion des ressources",
+			"subtitle": "Gérez les machines, les périodes de maintenance, les disponibilités et les conflits de planning.",
+			"create": "Ajouter une machine",
+			"refresh": "Actualiser",
+			"edit": "Modifier la machine",
+			"save": "Enregistrer la machine",
+			"saving": "Enregistrement…",
+			"cancel": "Annuler",
+			"delete": "Supprimer",
+			"name": "Nom",
+			"namePlaceholder": "Ex. Pelleteuse 01",
+			"type": "Type",
+			"typePlaceholder": "Ex. Pelleteuse",
+			"description": "Description",
+			"descriptionPlaceholder": "Emplacement, capacité ou notes utiles…",
+			"status": "État de fonctionnement",
+			"maintenanceStart": "Début de maintenance",
+			"maintenanceEnd": "Fin de maintenance",
+			"statuses": {
+				"operational": "En fonctionnement",
+				"maintenance": "En maintenance",
+				"out_of_service": "Hors service"
+			},
+			"emptyTitle": "Aucune machine",
+			"emptyDescription": "Ajoutez une première machine pour pouvoir l'affecter aux tâches planifiées.",
+			"conflicts": "Conflits de planning",
+			"noConflicts": "Aucun conflit détecté",
+			"conflictCount_one": "{{count}} conflit détecté",
+			"conflictCount_other": "{{count}} conflits détectés",
+			"maintenanceConflict": "chevauche une période de maintenance",
+			"unavailableConflict": "utilise une machine hors service",
+			"memberUnavailableConflict": "est affectée à une personne indisponible le {{date}}",
+			"resourceConflict": "utilise la même machine que {{task}}",
+			"assigneeConflict": "est affectée à la même personne que {{task}}",
+			"created": "Machine créée",
+			"updated": "Machine mise à jour",
+			"deleted": "Machine supprimée",
+			"saveError": "Impossible d'enregistrer la machine",
+			"deleteError": "Impossible de supprimer la machine",
+			"deleteConfirm": "Supprimer cette machine et la retirer de toutes les tâches ?"
+		},
 		"search": {
 			"pageTitle": "Rechercher",
 			"backToDashboard": "Retour au tableau de bord",
@@ -2580,6 +2630,21 @@
 			"pageTitle": "Membres",
 			"inviteMember": "Inviter un membre",
 			"you": "Vous"
+		},
+		"availability": {
+			"column": "Disponibilité",
+			"title": "Disponibilité — {{name}}",
+			"description": "Sélectionnez une ou plusieurs dates auxquelles ce membre est indisponible.",
+			"readOnlyDescription": "Voici les dates auxquelles ce membre est indisponible.",
+			"selectedCount_one": "{{count}} date d'indisponibilité sélectionnée",
+			"selectedCount_other": "{{count}} dates d'indisponibilité sélectionnées",
+			"unavailableCount_one": "{{count}} indisponibilité à venir",
+			"unavailableCount_other": "{{count}} indisponibilités à venir",
+			"available": "Disponible",
+			"save": "Enregistrer les dates",
+			"saving": "Enregistrement…",
+			"saved": "Disponibilité mise à jour",
+			"saveError": "Impossible de mettre à jour la disponibilité"
 		},
 		"invitations": {
 			"pendingBadge": "En attente",

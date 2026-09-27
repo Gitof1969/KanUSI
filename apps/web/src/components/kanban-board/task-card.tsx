@@ -3,9 +3,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import {
+  AlertTriangle,
   Calendar,
   CalendarClock,
   CalendarX,
+  Factory,
   GitMerge,
   GitPullRequest,
   SlidersHorizontal,
@@ -23,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import {
@@ -32,8 +35,11 @@ import {
 } from "@/components/ui/preview-card";
 import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import useGetCustomFieldValuesByProject from "@/hooks/queries/custom-field/use-get-custom-field-values-by-project";
+import { useResourceConflicts } from "@/hooks/queries/resource/use-resource-conflicts";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { cn } from "@/lib/cn";
+import { getColumnIcon } from "@/lib/column";
 import {
   dueDateStatusColors,
   getDueDateStatus,
@@ -41,6 +47,7 @@ import {
 } from "@/lib/due-date-status";
 import { getExternalWebUrl, openExternalWebUrl } from "@/lib/external-url";
 import { getInitials } from "@/lib/get-initials";
+import { getStatusDisplayLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import useBulkSelectionStore from "@/store/bulk-selection";
@@ -81,6 +88,22 @@ function TaskCard({ task, disableDragDrop = false }: TaskCardProps) {
   const { toggleSelection, isSelected, isFocused } = useBulkSelectionStore();
   const isTaskSelected = isSelected(task.id);
   const isTaskFocused = isFocused(task.id);
+  const { data: resourceConflicts = [] } = useResourceConflicts(
+    workspace?.id ?? "",
+  );
+  const hasConflict = useMemo(
+    () =>
+      resourceConflicts.some(
+        (conflict) =>
+          conflict.task.id === task.id ||
+          conflict.conflictingTask?.id === task.id,
+      ),
+    [resourceConflicts, task.id],
+  );
+  const statusColumn = project?.columns.find(
+    (column) => column.slug === task.status || column.id === task.status,
+  );
+  const statusLabel = getStatusDisplayLabel(task.status, statusColumn?.name);
 
   const pullRequests = useMemo(() => {
     return (task.externalLinks ?? []).filter(
@@ -214,17 +237,19 @@ function TaskCard({ task, disableDragDrop = false }: TaskCardProps) {
           {/** biome-ignore lint/a11y/noStaticElementInteractions: false positive for onClick and onKeyDown */}
           <div
             onClick={handleTaskCardClick}
-            className={`group relative rounded-lg border bg-background p-3 shadow-xs/5 transition-[background-color,border-color,box-shadow,scale] duration-150 ease-out active:scale-[0.98] ${
-              disableDragDrop ? "cursor-default" : "cursor-move"
-            } ${
+            className={cn(
+              "group relative rounded-lg border bg-background p-3 shadow-xs/5 transition-[background-color,border-color,box-shadow,scale] duration-150 ease-out active:scale-[0.98]",
+              disableDragDrop ? "cursor-default" : "cursor-move",
               isDragging
                 ? "border-ring/40 bg-card shadow-lg"
-                : "hover:border-border/90 hover:bg-background hover:shadow-sm"
-            } ${
+                : "hover:border-border/90 hover:bg-background hover:shadow-sm",
               isTaskSelected
                 ? "border-ring/40 bg-accent/50 shadow-sm ring-1 ring-inset ring-ring/30"
-                : "border-border"
-            } ${isTaskFocused ? "ring-2 ring-inset ring-ring/50" : ""}`}
+                : "border-border",
+              isTaskFocused && "ring-2 ring-inset ring-ring/50",
+              hasConflict &&
+                "border-destructive/70 bg-destructive/5 hover:border-destructive hover:bg-destructive/8",
+            )}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleTaskCardClick(e);
@@ -233,6 +258,33 @@ function TaskCard({ task, disableDragDrop = false }: TaskCardProps) {
               }
             }}
           >
+            <div className="mb-2 flex min-w-0 items-center gap-1.5 pr-7">
+              <Badge
+                size="sm"
+                variant="outline"
+                className="min-w-0 max-w-full shrink gap-1 bg-muted/55 text-muted-foreground [&_svg]:size-3"
+                title={statusLabel}
+              >
+                {getColumnIcon(
+                  statusColumn?.slug ?? task.status,
+                  statusColumn?.isFinal,
+                  statusColumn?.icon,
+                )}
+                <span className="truncate">{statusLabel}</span>
+              </Badge>
+              {hasConflict ? (
+                <Badge
+                  size="sm"
+                  variant="error"
+                  className="gap-1"
+                  title={t("tasks:conflict")}
+                >
+                  <AlertTriangle className="size-3" />
+                  {t("tasks:conflict")}
+                </Badge>
+              ) : null}
+            </div>
+
             {showTaskNumbers && (
               <div className="mb-2 text-[10px] font-mono text-muted-foreground/90">
                 {project?.slug}-{task.number}
@@ -483,6 +535,20 @@ function TaskCard({ task, disableDragDrop = false }: TaskCardProps) {
                     </HoverCard>
                   );
                 })()}
+
+              {task.resources?.length ? (
+                <span
+                  className="ml-auto inline-flex h-5.5 max-w-[65%] items-center gap-1 rounded border border-border/70 bg-muted/55 px-2 py-1 text-[10px] font-medium text-muted-foreground"
+                  title={task.resources
+                    .map((resource) => resource.name)
+                    .join(", ")}
+                >
+                  <Factory className="size-3 shrink-0" />
+                  <span className="truncate">
+                    {task.resources.map((resource) => resource.name).join(", ")}
+                  </span>
+                </span>
+              ) : null}
             </div>
           </div>
         </ContextMenuTrigger>

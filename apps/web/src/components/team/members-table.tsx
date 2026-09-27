@@ -1,6 +1,7 @@
 import { DEFAULT_ROLE_NAMES } from "@kaneo/permissions";
 import {
   CopyIcon,
+  CalendarDaysIcon,
   EllipsisIcon,
   MailIcon,
   ShieldIcon,
@@ -12,6 +13,7 @@ import useCancelInvitation from "@/hooks/mutations/workspace-user/use-cancel-inv
 import useDeleteWorkspaceUser from "@/hooks/mutations/workspace-user/use-delete-workspace-user";
 import useUpdateWorkspaceUserRole from "@/hooks/mutations/workspace-user/use-update-workspace-user-role";
 import useWorkspaceRoles from "@/hooks/queries/workspace/use-workspace-roles";
+import { useMemberUnavailability } from "@/hooks/queries/resource/use-member-unavailability";
 import { useCopyInvitationLink } from "@/hooks/use-copy-invitation-link";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
@@ -23,6 +25,7 @@ import type {
   WorkspaceUserInvitation,
 } from "@/types/workspace-user";
 import { useAuth } from "../providers/auth-provider/hooks/use-auth";
+import MemberUnavailabilityDialog from "./member-unavailability-dialog";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -97,6 +100,8 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
   );
   const [invitationToCancel, setInvitationToCancel] =
     useState<WorkspaceUserInvitation | null>(null);
+  const [availabilityMember, setAvailabilityMember] =
+    useState<WorkspaceUser | null>(null);
 
   const { user: currentUser } = useAuth();
   const { mutateAsync: deleteWorkspaceUser, isPending: isDeleting } =
@@ -106,6 +111,8 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
   const { mutateAsync: updateMemberRole } = useUpdateWorkspaceUserRole();
   const { copy: copyInvitationLink } = useCopyInvitationLink();
   const { data: allWorkspaceRoles = [] } = useWorkspaceRoles(workspaceId);
+  const { data: unavailability = [] } =
+    useMemberUnavailability(workspaceId);
   const { canManageTeam, canRemoveMembers, canInviteUsers } =
     useWorkspacePermission();
   const canChangeRoles = Boolean(canManageTeam());
@@ -195,6 +202,9 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
               {t("team:membersTable.columns.role", { defaultValue: "Role" })}
             </TableHead>
             <TableHead className="text-foreground font-medium">
+              {t("team:availability.column")}
+            </TableHead>
+            <TableHead className="text-foreground font-medium">
               {t("team:membersTable.columns.joined", {
                 defaultValue: "Joined",
               })}
@@ -208,6 +218,12 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
             const showRoleSelect =
               canChangeRoles && !isSelf && member.role !== "owner";
             const tone = toneFor(member.user.email);
+            const today = new Date().toISOString().slice(0, 10);
+            const futureUnavailableDates = unavailability.filter(
+              (entry) =>
+                entry.userId === member.userId &&
+                entry.unavailableDate >= today,
+            );
             return (
               <TableRow key={member.user.email}>
                 <TableCell className="ps-6 py-3">
@@ -223,9 +239,13 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
                     </Avatar>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
+                        <button
+                          type="button"
+                          className="text-sm font-medium hover:underline"
+                          onClick={() => setAvailabilityMember(member)}
+                        >
                           {member.user.name}
-                        </span>
+                        </button>
                         {isSelf ? (
                           <span className="text-xs text-muted-foreground">
                             ({t("team:members.you", { defaultValue: "You" })})
@@ -291,6 +311,20 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
                 </TableCell>
                 <TableCell className="py-3 text-sm text-muted-foreground tabular-nums">
                   {member.createdAt ? formatDateMedium(member.createdAt) : "–"}
+                </TableCell>
+                <TableCell className="py-3">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                    onClick={() => setAvailabilityMember(member)}
+                  >
+                    <CalendarDaysIcon className="size-4" />
+                    {futureUnavailableDates.length
+                      ? t("team:availability.unavailableCount", {
+                          count: futureUnavailableDates.length,
+                        })
+                      : t("team:availability.available")}
+                  </button>
                 </TableCell>
                 <TableCell className="pe-6 py-3 text-right">
                   {!isSelf && canRemove ? (
@@ -363,6 +397,9 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
               <TableCell className="py-3 text-sm text-muted-foreground">
                 –
               </TableCell>
+              <TableCell className="py-3 text-sm text-muted-foreground">
+                –
+              </TableCell>
               <TableCell className="pe-6 py-3 text-right">
                 {canInvite ? (
                   <Menu>
@@ -402,7 +439,7 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
 
           {users.length === 0 && pendingInvitations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="py-16 text-center">
+              <TableCell colSpan={5} className="py-16 text-center">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <p className="text-sm font-medium text-foreground">
                     {t("team:membersTable.emptyTitle")}
@@ -416,6 +453,17 @@ function MembersTable({ workspaceId, invitations, users }: Props) {
           ) : null}
         </TableBody>
       </Table>
+
+      <MemberUnavailabilityDialog
+        workspaceId={workspaceId}
+        member={availabilityMember}
+        entries={unavailability}
+        canEdit={
+          Boolean(availabilityMember) &&
+          (currentUser?.id === availabilityMember?.userId || canChangeRoles)
+        }
+        onClose={() => setAvailabilityMember(null)}
+      />
 
       <AlertDialog
         open={!!memberToDelete}

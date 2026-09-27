@@ -3,6 +3,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   customType,
+  date,
   foreignKey,
   index,
   integer,
@@ -462,6 +463,105 @@ export const taskTable = pgTable(
     index("task_assigneeId_idx").on(table.userId),
     index("task_columnId_idx").on(table.columnId),
     unique("task_project_number_unique").on(table.projectId, table.number),
+  ],
+);
+
+export const resourceTable = pgTable(
+  "resource",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaceTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    name: text("name").notNull(),
+    type: text("type").notNull(),
+    description: text("description"),
+    status: text("status")
+      .$type<"operational" | "maintenance" | "out_of_service">()
+      .notNull()
+      .default("operational"),
+    maintenanceStart: timestamp("maintenance_start", { mode: "date" }),
+    maintenanceEnd: timestamp("maintenance_end", { mode: "date" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("resource_workspace_id_idx").on(table.workspaceId),
+    index("resource_workspace_status_idx").on(table.workspaceId, table.status),
+    unique("resource_workspace_name_unique").on(table.workspaceId, table.name),
+  ],
+);
+
+export const taskResourceTable = pgTable(
+  "task_resource",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => taskTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    resourceId: text("resource_id")
+      .notNull()
+      .references(() => resourceTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("task_resource_task_resource_unique").on(
+      table.taskId,
+      table.resourceId,
+    ),
+    index("task_resource_task_id_idx").on(table.taskId),
+    index("task_resource_resource_id_idx").on(table.resourceId),
+  ],
+);
+
+export const memberUnavailabilityTable = pgTable(
+  "member_unavailability",
+  {
+    id: text("id")
+      .$defaultFn(() => createId())
+      .primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaceTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    unavailableDate: date("unavailable_date", { mode: "string" }).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("member_unavailability_workspace_user_date_unique").on(
+      table.workspaceId,
+      table.userId,
+      table.unavailableDate,
+    ),
+    index("member_unavailability_workspace_date_idx").on(
+      table.workspaceId,
+      table.unavailableDate,
+    ),
+    index("member_unavailability_user_id_idx").on(table.userId),
   ],
 );
 

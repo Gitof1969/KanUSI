@@ -13,11 +13,14 @@ import {
   integrationTable,
   invitationTable,
   labelTable,
+  memberUnavailabilityTable,
   notificationTable,
   projectTable,
+  resourceTable,
   sessionTable,
   taskRelationTable,
   taskReminderSentTable,
+  taskResourceTable,
   taskTable,
   teamMemberTable,
   teamTable,
@@ -44,6 +47,7 @@ export const userTableRelations = relations(userTable, ({ many, one }) => ({
   comments: many(commentTable),
   assets: many(assetTable),
   notifications: many(notificationTable),
+  unavailability: many(memberUnavailabilityTable),
   notificationPreference: one(userNotificationPreferenceTable),
   notificationWorkspaceRules: many(userNotificationWorkspaceRuleTable),
   sentInvitations: many(invitationTable),
@@ -75,6 +79,8 @@ export const workspaceTableRelations = relations(
     teams: many(teamTable),
     members: many(workspaceUserTable),
     projects: many(projectTable),
+    resources: many(resourceTable),
+    memberUnavailability: many(memberUnavailabilityTable),
     assets: many(assetTable),
     invitations: many(invitationTable),
     notificationWorkspaceRules: many(userNotificationWorkspaceRuleTable),
@@ -158,7 +164,47 @@ export const taskTableRelations = relations(taskTable, ({ one, many }) => ({
   targetRelations: many(taskRelationTable, { relationName: "targetTask" }),
   remindersSent: many(taskReminderSentTable),
   customFieldValues: many(customFieldValueTable),
+  resourceAssignments: many(taskResourceTable),
 }));
+
+export const resourceTableRelations = relations(
+  resourceTable,
+  ({ one, many }) => ({
+    workspace: one(workspaceTable, {
+      fields: [resourceTable.workspaceId],
+      references: [workspaceTable.id],
+    }),
+    taskAssignments: many(taskResourceTable),
+  }),
+);
+
+export const taskResourceTableRelations = relations(
+  taskResourceTable,
+  ({ one }) => ({
+    task: one(taskTable, {
+      fields: [taskResourceTable.taskId],
+      references: [taskTable.id],
+    }),
+    resource: one(resourceTable, {
+      fields: [taskResourceTable.resourceId],
+      references: [resourceTable.id],
+    }),
+  }),
+);
+
+export const memberUnavailabilityTableRelations = relations(
+  memberUnavailabilityTable,
+  ({ one }) => ({
+    workspace: one(workspaceTable, {
+      fields: [memberUnavailabilityTable.workspaceId],
+      references: [workspaceTable.id],
+    }),
+    user: one(userTable, {
+      fields: [memberUnavailabilityTable.userId],
+      references: [userTable.id],
+    }),
+  }),
+);
 
 export const timeEntryTableRelations = relations(timeEntryTable, ({ one }) => ({
   task: one(taskTable, {

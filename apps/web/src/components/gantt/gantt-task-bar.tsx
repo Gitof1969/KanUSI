@@ -1,6 +1,8 @@
 import { addDays, differenceInCalendarDays, startOfDay } from "date-fns";
+import { AlertTriangle, Factory, UserRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Badge } from "@/components/ui/badge";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
@@ -24,6 +26,8 @@ type GanttTaskBarProps = {
   pixelsPerDay: number;
   isMobile?: boolean;
   onOpenTask: () => void;
+  hasConflict?: boolean;
+  statusLabel: string;
 };
 
 function getBarGridColumns(
@@ -56,6 +60,8 @@ export function GanttTaskBar({
   pixelsPerDay,
   isMobile = false,
   onOpenTask,
+  hasConflict = false,
+  statusLabel,
 }: GanttTaskBarProps) {
   const { t } = useTranslation();
   const { mutateAsync: updateTask } = useUpdateTask();
@@ -299,7 +305,12 @@ export function GanttTaskBar({
     >
       <div
         style={{ gridColumn: `${lineStart} / ${lineEnd}` }}
-        className="group pointer-events-auto relative mx-1 flex min-h-[44px] min-w-0 items-stretch overflow-hidden rounded-md border border-primary/25 bg-background text-left text-sm font-medium leading-none text-foreground shadow-sm transition-colors hover:border-primary/40 sm:h-11 sm:min-h-0"
+        className={cn(
+          "group pointer-events-auto relative mx-1 flex min-h-[44px] min-w-0 items-stretch overflow-hidden rounded-md border bg-background text-left text-sm font-medium leading-none text-foreground shadow-sm transition-colors sm:h-11 sm:min-h-0",
+          hasConflict
+            ? "border-destructive/70 ring-1 ring-destructive/20 hover:border-destructive"
+            : "border-primary/25 hover:border-primary/40",
+        )}
       >
         <button
           type="button"
@@ -324,8 +335,46 @@ export function GanttTaskBar({
             }
           }}
         >
-          <div className="absolute inset-0 z-0 bg-primary/12 transition-colors group-hover:bg-primary/18" />
-          <span className="relative z-10 block truncate">{task.title}</span>
+          <div
+            className={cn(
+              "absolute inset-0 z-0 transition-colors",
+              hasConflict
+                ? "bg-destructive/10 group-hover:bg-destructive/16"
+                : "bg-primary/12 group-hover:bg-primary/18",
+            )}
+          />
+          <span className="relative z-10 flex min-w-0 flex-col justify-center gap-0.5">
+            <span className="flex min-w-0 items-center gap-1 truncate">
+              <Badge
+                size="sm"
+                variant="outline"
+                className="h-4 max-w-[45%] border-primary/20 bg-background/75 px-1 text-[9px] text-muted-foreground"
+                title={statusLabel}
+              >
+                <span className="truncate">{statusLabel}</span>
+              </Badge>
+              {hasConflict ? (
+                <AlertTriangle className="size-3 shrink-0 text-destructive" />
+              ) : null}
+              <span className="truncate">{task.title}</span>
+            </span>
+            <span className="flex items-center gap-2 truncate text-[10px] font-normal text-muted-foreground">
+              <span className="flex min-w-0 items-center gap-1 truncate">
+                <UserRound className="size-2.5 shrink-0" />
+                <span className="truncate">
+                  {task.assigneeName ?? t("tasks:assignee.unassigned")}
+                </span>
+              </span>
+              {task.resources?.length ? (
+                <span className="flex min-w-0 items-center gap-1 truncate">
+                  <Factory className="size-2.5 shrink-0" />
+                  <span className="truncate">
+                    {task.resources.map((resource) => resource.name).join(", ")}
+                  </span>
+                </span>
+              ) : null}
+            </span>
+          </span>
         </button>
         <button
           type="button"

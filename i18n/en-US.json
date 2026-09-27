@@ -1755,6 +1755,7 @@
 		"sidebar": {
 			"overview": "Overview",
 			"projects": "Projects",
+			"resources": "Resource management",
 			"members": "Members",
 			"invitations": "Invitations",
 			"more": "More",
@@ -2019,6 +2020,7 @@
 	"tasks": {
 		"checklistProgress": "{{completed}} of {{total}} checklist items completed",
 		"title": "Tasks",
+		"conflict": "Conflict",
 		"status": {
 			"label": "Status",
 			"to-do": "To Do",
@@ -2206,7 +2208,12 @@
 			"copyTaskBranch": "Copy task branch",
 			"start": "Start",
 			"startDate": "Start date",
-			"noDate": "No date"
+			"noDate": "No date",
+			"resources": "Machines",
+			"noResources": "No machine",
+			"resourcesDescription": "Choose the machines required for this task. Conflicting reservations and maintenance periods will be reported.",
+			"resourcesUpdated": "Task machines updated",
+			"resourcesUpdateError": "The task machines could not be updated"
 		},
 		"move": {
 			"title": "Move task",
@@ -2345,6 +2352,7 @@
 			"pageTitle": "{{name}} – Gantt",
 			"title": "Gantt Timeline",
 			"jumpToToday": "Jump to today",
+			"refresh": "Refresh",
 			"searchPlaceholder": "Search scheduled tickets...",
 			"hideTasks": "Hide tasks",
 			"showTasks": "Show tasks",
@@ -2526,6 +2534,48 @@
 			"reorderHandle": "Reorder project",
 			"reorderError": "Failed to reorder projects"
 		},
+		"resources": {
+			"pageTitle": "Resource management",
+			"subtitle": "Manage machines, maintenance periods, availability and scheduling conflicts.",
+			"create": "Add a machine",
+			"refresh": "Refresh",
+			"edit": "Edit machine",
+			"save": "Save machine",
+			"saving": "Saving…",
+			"cancel": "Cancel",
+			"delete": "Delete",
+			"name": "Name",
+			"namePlaceholder": "e.g. Excavator 01",
+			"type": "Type",
+			"typePlaceholder": "e.g. Excavator",
+			"description": "Description",
+			"descriptionPlaceholder": "Location, capacity or useful notes…",
+			"status": "Operating status",
+			"maintenanceStart": "Maintenance start",
+			"maintenanceEnd": "Maintenance end",
+			"statuses": {
+				"operational": "Operational",
+				"maintenance": "In maintenance",
+				"out_of_service": "Out of service"
+			},
+			"emptyTitle": "No machines yet",
+			"emptyDescription": "Add your first machine to assign it to scheduled tasks.",
+			"conflicts": "Scheduling conflicts",
+			"noConflicts": "No conflicts detected",
+			"conflictCount_one": "{{count}} conflict detected",
+			"conflictCount_other": "{{count}} conflicts detected",
+			"maintenanceConflict": "overlaps a maintenance period",
+			"unavailableConflict": "uses a machine that is out of service",
+			"memberUnavailableConflict": "is assigned to an unavailable member on {{date}}",
+			"resourceConflict": "uses the same machine as {{task}}",
+			"assigneeConflict": "is assigned to the same person as {{task}}",
+			"created": "Machine created",
+			"updated": "Machine updated",
+			"deleted": "Machine deleted",
+			"saveError": "The machine could not be saved",
+			"deleteError": "The machine could not be deleted",
+			"deleteConfirm": "Delete this machine and remove it from all tasks?"
+		},
 		"search": {
 			"pageTitle": "Search",
 			"backToDashboard": "Back to Dashboard",
@@ -2571,6 +2621,21 @@
 			"pageTitle": "Members",
 			"inviteMember": "Invite member",
 			"you": "You"
+		},
+		"availability": {
+			"column": "Availability",
+			"title": "Availability — {{name}}",
+			"description": "Select one or more dates when this member is unavailable.",
+			"readOnlyDescription": "These are the dates when this member is unavailable.",
+			"selectedCount_one": "{{count}} unavailable date selected",
+			"selectedCount_other": "{{count}} unavailable dates selected",
+			"unavailableCount_one": "{{count}} upcoming unavailable date",
+			"unavailableCount_other": "{{count}} upcoming unavailable dates",
+			"available": "Available",
+			"save": "Save dates",
+			"saving": "Saving…",
+			"saved": "Availability updated",
+			"saveError": "Availability could not be updated"
 		},
 		"invitations": {
 			"pendingBadge": "pending",

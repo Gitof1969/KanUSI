@@ -64,6 +64,15 @@ const taskExternalLinkSchema = z
   })
   .openapi("TaskExternalLink");
 
+const taskResourceSummarySchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    type: z.string(),
+    status: z.enum(["operational", "maintenance", "out_of_service"]),
+  })
+  .openapi("TaskResourceSummary");
+
 export const boardTaskSchema = z
   .object({
     id: z.string(),
@@ -96,6 +105,7 @@ export const boardTaskSchema = z
       }),
     labels: z.array(taskLabelSchema),
     externalLinks: z.array(taskExternalLinkSchema),
+    resources: z.array(taskResourceSummarySchema),
   })
   .openapi("BoardTask");
 

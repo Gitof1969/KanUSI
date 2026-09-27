@@ -16,6 +16,8 @@ import {
   externalLinkTable,
   labelTable,
   projectTable,
+  resourceTable,
+  taskResourceTable,
   taskTable,
   userTable,
 } from "../../database/schema";
@@ -207,6 +209,27 @@ async function getTasksPage(
           .offset(relatedOffset)
       : [];
 
+  const resourcesData =
+    taskIds.length > 0 && !options.publicOnly
+      ? await db
+          .select({
+            taskId: taskResourceTable.taskId,
+            id: resourceTable.id,
+            name: resourceTable.name,
+            type: resourceTable.type,
+            status: resourceTable.status,
+          })
+          .from(taskResourceTable)
+          .innerJoin(
+            resourceTable,
+            eq(taskResourceTable.resourceId, resourceTable.id),
+          )
+          .where(inArray(taskResourceTable.taskId, taskIds))
+          .orderBy(asc(taskResourceTable.id))
+          .limit(relatedPageSize)
+          .offset(relatedOffset)
+      : [];
+
   const taskLabelsMap = new Map<
     string,
     Array<{ id: string; name: string; color: string }>
@@ -247,6 +270,26 @@ async function getTasksPage(
       ...externalLink,
       metadata: parseMetadata(externalLink.metadata),
     });
+  }
+
+  const taskResourcesMap = new Map<
+    string,
+    Array<{
+      id: string;
+      name: string;
+      type: string;
+      status: "operational" | "maintenance" | "out_of_service";
+    }>
+  >();
+  for (const resource of resourcesData) {
+    const assigned = taskResourcesMap.get(resource.taskId) ?? [];
+    assigned.push({
+      id: resource.id,
+      name: resource.name,
+      type: resource.type,
+      status: resource.status,
+    });
+    taskResourcesMap.set(resource.taskId, assigned);
   }
 
   const projectColumns = await db
@@ -291,6 +334,7 @@ async function getTasksPage(
     .where(eq(columnTable.projectId, projectId));
   let labelCount = 0;
   let linkCount = 0;
+  let resourceCount = 0;
   if (taskIds.length) {
     const [labels] = await db
       .select({ count: sql<number>`count(*)` })
@@ -300,8 +344,15 @@ async function getTasksPage(
       .select({ count: sql<number>`count(*)` })
       .from(externalLinkTable)
       .where(inArray(externalLinkTable.taskId, taskIds));
+    const [resources] = options.publicOnly
+      ? [{ count: 0 }]
+      : await db
+          .select({ count: sql<number>`count(*)` })
+          .from(taskResourceTable)
+          .where(inArray(taskResourceTable.taskId, taskIds));
     labelCount = Number(labels?.count ?? 0);
     linkCount = Number(links?.count ?? 0);
+    resourceCount = Number(resources?.count ?? 0);
   }
 
   const columns = projectColumns.map((column) => ({
@@ -318,6 +369,7 @@ async function getTasksPage(
         subtaskCounts: subtaskCounts.get(task.id) ?? { completed: 0, total: 0 },
         labels: taskLabelsMap.get(task.id) || [],
         externalLinks: taskExternalLinksMap.get(task.id) || [],
+        resources: taskResourcesMap.get(task.id) || [],
       })),
   }));
 
@@ -328,6 +380,7 @@ async function getTasksPage(
       subtaskCounts: subtaskCounts.get(task.id) ?? { completed: 0, total: 0 },
       labels: taskLabelsMap.get(task.id) || [],
       externalLinks: taskExternalLinksMap.get(task.id) || [],
+      resources: taskResourcesMap.get(task.id) || [],
     }));
 
   const plannedTasks = paginatedTasks
@@ -337,6 +390,7 @@ async function getTasksPage(
       subtaskCounts: subtaskCounts.get(task.id) ?? { completed: 0, total: 0 },
       labels: taskLabelsMap.get(task.id) || [],
       externalLinks: taskExternalLinksMap.get(task.id) || [],
+      resources: taskResourcesMap.get(task.id) || [],
     }));
 
   return {
@@ -364,7 +418,12 @@ async function getTasksPage(
       relatedTotalPages: Math.max(
         1,
         Math.ceil(
-          Math.max(Number(columnCount?.count ?? 0), labelCount, linkCount) /
+          Math.max(
+            Number(columnCount?.count ?? 0),
+            labelCount,
+            linkCount,
+            resourceCount,
+          ) /
             relatedPageSize,
         ),
       ),

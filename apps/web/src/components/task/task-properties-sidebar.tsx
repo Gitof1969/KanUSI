@@ -45,6 +45,7 @@ import TaskDueDatePopover from "./task-due-date-popover";
 import TaskLabelsPopover from "./task-labels-popover";
 import TaskMovePopover from "./task-move-popover";
 import TaskPriorityPopover from "./task-priority-popover";
+import TaskResourcesDialog from "./task-resources-dialog";
 import TaskStartDatePopover from "./task-start-date-popover";
 import TaskStatusPopover from "./task-status-popover";
 
@@ -715,6 +716,12 @@ export default function TaskPropertiesSidebar({
             </div>
           </>
         )}
+
+        {task ? (
+          <div className="px-3 py-1">
+            <TaskResourcesDialog taskId={task.id} workspaceId={workspaceId} />
+          </div>
+        ) : null}
 
         <div className="hidden lg:flex px-3 flex-col gap-3 p-2">
           <div className="flex flex-col gap-1">
