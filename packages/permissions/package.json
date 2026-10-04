@@ -19,12 +19,12 @@
 		"test:watch": "vitest --config vitest.config.ts"
 	},
 	"dependencies": {
-		"better-auth": "1.6.26"
+		"better-auth": "1.7.7"
 	},
 	"devDependencies": {
 		"@kaneo/typescript-config": "workspace:*",
 		"typescript": "^7.0.2",
-		"vite": "^8.3.0",
-		"vitest": "^5.0.1"
+		"vite": "^8.3.2",
+		"vitest": "^5.0.3"
 	}
 }
